@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AUv2Id {
     pub manufacturer: [u8; 4],
     pub subtype: [u8; 4],

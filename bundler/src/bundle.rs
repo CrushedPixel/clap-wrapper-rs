@@ -188,7 +188,7 @@ fn info_plist_generic(plugin: &PluginInfo) -> String {
     )
 }
 
-/// Generate a MacOS bundle Info.plist file for the given plugin, including AUv2-specific metadata if available
+/// Generates AUv2 metadata with manufacturer-prefixed names for host grouping.
 fn info_plist_auv2(
     plugin: &PluginInfo,
     library: &PluginLibrary,
@@ -238,26 +238,32 @@ fn info_plist_auv2(
         plugin.clap_vendor.as_deref().unwrap_or(""),
     );
 
+    let mut identities = std::collections::HashSet::new();
+    // Additional identities share their plugin's existing factory entry point.
     // we currently support at most 4 plugins per bundle
     for (index, plugin) in library.plugins.iter().take(4).enumerate() {
         let auv2_id = auv2_override_id.or(plugin.auv2_id).ok_or_else(|| {
             anyhow::anyhow!("Plugin does not export an AUv2 ID and no override was provided")
         })?;
 
-        let code_manu = str::from_utf8(&auv2_id.manufacturer)
-            .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 manufacturer code"))?;
-        let code_subt = str::from_utf8(&auv2_id.subtype)
-            .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 subtype code"))?;
-        let code_type = str::from_utf8(&auv2_id.type_)
-            .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 type code"))?;
+        for auv2_id in std::iter::once(auv2_id).chain(plugin.auv2_legacy_ids.iter().copied()) {
+            if !identities.insert(auv2_id) {
+                anyhow::bail!("Duplicate AUv2 component identity: {auv2_id:?}");
+            }
+            let code_manu = str::from_utf8(&auv2_id.manufacturer)
+                .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 manufacturer code"))?;
+            let code_subt = str::from_utf8(&auv2_id.subtype)
+                .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 subtype code"))?;
+            let code_type = str::from_utf8(&auv2_id.type_)
+                .map_err(|_| anyhow::anyhow!("Non-ASCII AUv2 type code"))?;
 
-        let version = parse_version_auv2(plugin.clap_version.as_deref().unwrap_or("0.0.0"));
+            let version = parse_version_auv2(plugin.clap_version.as_deref().unwrap_or("0.0.0"));
 
-        buffer.push_str(&format!(
-            r#"
+            buffer.push_str(&format!(
+                r#"
       <dict>
         <key>name</key>
-        <string>{}</string>
+        <string>{}: {}</string>
         <key>description</key>
         <string>{}</string>
         <key>factoryFunction</key>
@@ -278,14 +284,16 @@ fn info_plist_auv2(
            <true/>
         </dict>
       </dict>"#,
-            plugin.clap_name,
-            plugin.clap_description.as_deref().unwrap_or(""),
-            index,
-            code_manu,
-            code_subt,
-            code_type,
-            version
-        ));
+                plugin.clap_vendor.as_deref().unwrap_or(code_manu),
+                plugin.clap_name,
+                plugin.clap_description.as_deref().unwrap_or(""),
+                index,
+                code_manu,
+                code_subt,
+                code_type,
+                version
+            ));
+        }
     }
 
     buffer.push_str(
@@ -313,3 +321,7 @@ fn parse_version_auv2(version: &str) -> u32 {
 
     (major as u32) << 16 | (minor as u32) << 8 | patch as u32
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/auv2.rs"]
+mod tests;
