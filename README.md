@@ -25,7 +25,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-clap-wrapper = { version = "0.3.1", features = ["vst3", "auv2", "parallel"] } # these features are enabled by default
+clap-wrapper = { version = "0.18.0", features = ["vst3", "auv2", "parallel"] } # these features are enabled by default
 ```
 
 Then, in your `lib.rs`:
