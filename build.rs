@@ -41,7 +41,7 @@ fn build_vst3(os: &str, debug: bool, clap_wrapper_dir: &Path) {
     cc.include("./external/vst3sdk/public.sdk");
     cc.include("./external/vst3sdk/pluginterfaces");
 
-    cc.define("CLAP_WRAPPER_VERSION", Some("\"0.16.0\""));
+    cc.define("CLAP_WRAPPER_VERSION", Some("\"0.18.0\""));
     cc.define("CLAP_WRAPPER_BUILD_FOR_VST3", Some("1"));
     cc.define("STATICALLY_LINKED_CLAP_ENTRY", Some("1"));
 
@@ -80,9 +80,9 @@ fn build_vst3(os: &str, debug: bool, clap_wrapper_dir: &Path) {
     // clap wrapper shared
     cc.files([
         clap_wrapper_dir.join("src/clap_proxy.cpp"),
-        clap_wrapper_dir.join("src/detail/clap/fsutil.cpp"),
         clap_wrapper_dir.join("src/detail/shared/sha1.cpp"),
     ]);
+    cc.files(walk_files(clap_wrapper_dir.join("src/detail/clap"), "cpp"));
 
     // clap vst3 wrapper
     cc.files([
@@ -93,6 +93,7 @@ fn build_vst3(os: &str, debug: bool, clap_wrapper_dir: &Path) {
         clap_wrapper_dir.join("src/detail/vst3/plugview.cpp"),
         clap_wrapper_dir.join("src/detail/vst3/process.cpp"),
         clap_wrapper_dir.join("src/detail/vst3/categories.cpp"),
+        clap_wrapper_dir.join("src/detail/vst3/channelmap.cpp"),
     ]);
 
     if debug {
@@ -156,7 +157,7 @@ fn build_auv2(debug: bool, clap_wrapper_dir: &Path) {
         .unwrap()
         .as_nanos();
 
-    cc.define("CLAP_WRAPPER_VERSION", Some("\"0.16.0\""));
+    cc.define("CLAP_WRAPPER_VERSION", Some("\"0.18.0\""));
     cc.define("CLAP_WRAPPER_BUILD_AUV2", Some("1"));
     cc.define("STATICALLY_LINKED_CLAP_ENTRY", Some("1"));
     cc.define("DICTIONARY_STREAM_FORMAT_WRAPPER", Some("1"));
@@ -188,9 +189,9 @@ fn build_auv2(debug: bool, clap_wrapper_dir: &Path) {
     // clap wrapper shared
     cc.files([
         clap_wrapper_dir.join("src/clap_proxy.cpp"),
-        clap_wrapper_dir.join("src/detail/clap/fsutil.cpp"),
         clap_wrapper_dir.join("src/detail/shared/sha1.cpp"),
     ]);
+    cc.files(walk_files(clap_wrapper_dir.join("src/detail/clap"), "cpp"));
 
     // clap auv2 wrapper
     cc.files([
